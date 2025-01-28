@@ -9,6 +9,7 @@
 # Android
 /android/.gradle/
 /android/app/build/
+/android/gradle.properties
 
 # iOS
 ios/Pods/
@@ -52,3 +53,4 @@ build/
 
 # Coverage
 coverage/
+android/gradle-signing.properties

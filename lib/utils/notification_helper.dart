@@ -3,13 +3,13 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:self_contained_gratitude/models/journal_entry.dart';
 import 'package:self_contained_gratitude/utils/database_helper.dart';
 import 'package:self_contained_gratitude/calendar_page/calendar_page.dart';
 import 'package:self_contained_gratitude/utils/journal_database_helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'package:permission_handler/permission_handler.dart';
 
 class NotificationHelper {
   // 1. Private constructor.
@@ -28,6 +28,8 @@ class NotificationHelper {
   Future<void> initialize(GlobalKey<NavigatorState> navigatorKey) async {
     _navigatorKey = navigatorKey;
     tz.initializeTimeZones();
+
+    await requestNotificationPermission();
 
     const AndroidInitializationSettings androidSettings =
     AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -55,6 +57,31 @@ class NotificationHelper {
     );
 
     await _createNotificationChannel();
+  }
+
+  Future<void> requestNotificationPermission() async {
+    if (Platform.isAndroid) {
+      final status = await Permission.notification.request();
+      if (status != PermissionStatus.granted) {
+        debugPrint('Notification permission denied.');
+      } else {
+        debugPrint('Notification permission granted.');
+      }
+    }
+    else if (Platform.isIOS) {
+      final bool granted = await flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
+          ?.requestPermissions(
+        alert: true,
+        badge: true,
+        sound: true,
+      ) ??
+          false;
+
+      if (!granted) {
+        debugPrint('iOS notification permissions denied.');
+      }
+    }
   }
 
   Future<void> _createNotificationChannel() async {
