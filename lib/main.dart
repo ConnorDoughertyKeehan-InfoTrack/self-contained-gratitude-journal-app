@@ -2,7 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:self_contained_gratitude/utils/notification_helper.dart';
 import 'calendar_page/calendar_page.dart';
 
-void main() => runApp(MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized(); // Ensures all services are initialized
+  await NotificationHelper.instance.initialize(GlobalKey<NavigatorState>());
+  await NotificationHelper.instance.scheduleDailyNotification();
+
+  runApp(MyApp());
+}
 
 // main.dart
 class MyApp extends StatefulWidget {
@@ -29,7 +35,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      //navigatorKey: navigatorKey,
+      navigatorKey: navigatorKey,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:self_contained_gratitude/utils/database_helper.dart';
 import 'package:self_contained_gratitude/calendar_page/calendar_page.dart';
 import 'package:self_contained_gratitude/utils/journal_database_helper.dart';
@@ -27,7 +28,9 @@ class NotificationHelper {
 
   Future<void> initialize(GlobalKey<NavigatorState> navigatorKey) async {
     _navigatorKey = navigatorKey;
-    tz.initializeTimeZones();
+    tz.initializeTimeZones(); // Initialize the base timezone data
+    final String timeZoneName = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(timeZoneName)); // Set local timezone
 
     await requestNotificationPermission();
 
@@ -89,7 +92,7 @@ class NotificationHelper {
       const AndroidNotificationChannel channel = AndroidNotificationChannel(
         'daily_gratitude_channel',
         'Daily Gratitude',
-        importance: Importance.defaultImportance,
+        importance: Importance.high,
       );
 
       await flutterLocalNotificationsPlugin
@@ -112,9 +115,12 @@ class NotificationHelper {
     final prefs = await SharedPreferences.getInstance();
     final timeString = prefs.getString(_notificationTimeKey);
 
+    print(timeString);
     if (timeString != null) {
       final parts = timeString.split(':');
-      return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      final scheduledTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      print(scheduledTime);
+      return scheduledTime;
     }
 
     return _defaultTime; // Return midday if no time is stored
@@ -123,9 +129,12 @@ class NotificationHelper {
   Future<void> scheduleDailyNotification() async {
     final notificationTime = await getNotificationTime();
     final entries = await DatabaseHelper.instance.readAllEntries();
-    if (entries.isEmpty) return;
+    var gratitudeText = "Remember To Be Grateful";
 
-    final randomEntry = entries[Random().nextInt(entries.length)];
+    if (entries.isNotEmpty) {
+      gratitudeText = entries[Random().nextInt(entries.length)].bodyText;
+    };
+
     final nextTime = _getNextScheduledTime(notificationTime);
 
     const androidDetails = AndroidNotificationDetails(
@@ -144,7 +153,7 @@ class NotificationHelper {
     await flutterLocalNotificationsPlugin.zonedSchedule(
       0,
       'Gratitude Reminder',
-      randomEntry.bodyText,
+      gratitudeText,
       nextTime,
       platformDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
@@ -169,6 +178,7 @@ class NotificationHelper {
       scheduledTime = scheduledTime.add(const Duration(days: 1));
     }
 
+    print(scheduledTime);
     return scheduledTime;
   }
 }
