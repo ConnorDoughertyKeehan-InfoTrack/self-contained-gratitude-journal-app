@@ -1,0 +1,54 @@
+# Flutter/Dart/Pub related
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+
+# Android
+/android/.gradle/
+/android/app/build/
+
+# iOS
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/App.framework
+ios/Flutter/engine/
+
+# Generated files
+*.iml
+*.lock
+*.log
+*.tmp
+*.idea/
+*.hmap
+*.ipa
+*.aab
+.DS_Store
+
+# Build
+build/
+
+# IntelliJ related
+.idea/
+*.ipr
+*.iws
+*.iml
+*.jpb
+
+# VSCode
+.vscode/
+
+# Miscellaneous
+*.log
+*.tmp
+*.swp
+*.lock
+*.pyc
+*.pyo
+
+# Coverage
+coverage/
