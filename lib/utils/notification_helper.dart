@@ -22,17 +22,25 @@ class NotificationHelper {
   // 3. A public static getter to access this same instance.
   static NotificationHelper get instance => _singleton;
 
-  late GlobalKey<NavigatorState> _navigatorKey;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
 
-  Future<void> initialize(GlobalKey<NavigatorState> navigatorKey) async {
-    _navigatorKey = navigatorKey;
+  Future<void> initialize() async {
     tz.initializeTimeZones(); // Initialize the base timezone data
     final String timeZoneName = await FlutterTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(timeZoneName)); // Set local timezone
+    tz.setLocalLocation(tz.getLocation(timeZoneName));
 
-    await requestNotificationPermission();
+    final notificationsGranted = await requestNotificationPermissions();
+    if(!notificationsGranted){
+      //Do not setup notifications if permission is denied
+      return;
+    }
+
+    final alarmPermissions = await Permission.scheduleExactAlarm.request();
+
+    if(!alarmPermissions.isGranted){
+      return;
+    }
 
     const AndroidInitializationSettings androidSettings =
     AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -53,22 +61,19 @@ class NotificationHelper {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: (response) {
-        _navigatorKey.currentState?.push(
-          MaterialPageRoute(builder: (_) => const CalendarPage()),
-        );
+        MaterialPageRoute(builder: (_) => const CalendarPage());
       },
     );
 
     await _createNotificationChannel();
+    await scheduleDailyNotification();
   }
 
-  Future<void> requestNotificationPermission() async {
+  Future<bool> requestNotificationPermissions() async {
     if (Platform.isAndroid) {
-      final status = await Permission.notification.request();
-      if (status != PermissionStatus.granted) {
-        debugPrint('Notification permission denied.');
-      } else {
-        debugPrint('Notification permission granted.');
+      var permissionsStatus = await Permission.notification.request();
+      if(permissionsStatus.isGranted){
+        return true;
       }
     }
     else if (Platform.isIOS) {
@@ -81,10 +86,12 @@ class NotificationHelper {
       ) ??
           false;
 
-      if (!granted) {
-        debugPrint('iOS notification permissions denied.');
+      if(granted){
+        return true;
       }
     }
+
+    return false;
   }
 
   Future<void> _createNotificationChannel() async {
@@ -115,11 +122,9 @@ class NotificationHelper {
     final prefs = await SharedPreferences.getInstance();
     final timeString = prefs.getString(_notificationTimeKey);
 
-    print(timeString);
     if (timeString != null) {
       final parts = timeString.split(':');
       final scheduledTime = TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
-      print(scheduledTime);
       return scheduledTime;
     }
 
@@ -133,15 +138,15 @@ class NotificationHelper {
 
     if (entries.isNotEmpty) {
       gratitudeText = entries[Random().nextInt(entries.length)].bodyText;
-    };
+    }
 
     final nextTime = _getNextScheduledTime(notificationTime);
 
     const androidDetails = AndroidNotificationDetails(
       'daily_gratitude_channel',
       'Daily Gratitude',
-      importance: Importance.defaultImportance,
-      priority: Priority.defaultPriority,
+      importance: Importance.high,
+      priority: Priority.high,
     );
 
     const darwinDetails = DarwinNotificationDetails();
@@ -164,7 +169,7 @@ class NotificationHelper {
   }
 
   tz.TZDateTime _getNextScheduledTime(TimeOfDay time) {
-    final now = tz.TZDateTime.now(tz.local);
+    final now = DateTime.now();
     tz.TZDateTime scheduledTime = tz.TZDateTime(
       tz.local,
       now.year,
@@ -178,7 +183,6 @@ class NotificationHelper {
       scheduledTime = scheduledTime.add(const Duration(days: 1));
     }
 
-    print(scheduledTime);
     return scheduledTime;
   }
 }

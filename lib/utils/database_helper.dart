@@ -1,16 +1,26 @@
+import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper instance = DatabaseHelper._init();
-
   static Database? _database;
+  static final Completer<void> _dbReady = Completer<void>();
 
-  DatabaseHelper._init();
+  DatabaseHelper._init() {
+    _initialize();
+  }
+
+  void _initialize() async {
+    _database = await _initDB('gratitude_journal.db');
+    _dbReady.complete(); // Mark as ready when finished
+  }
+
+  Future<void> waitForDbReady() => _dbReady.future;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
-    _database = await _initDB('gratitude_journal.db');
+    await waitForDbReady(); // Wait for DB if it's not ready yet
     return _database!;
   }
 
@@ -34,10 +44,5 @@ class DatabaseHelper {
         body_text TEXT NOT NULL
       )
     ''');
-  }
-
-  Future<void> close() async {
-    final db = await instance.database;
-    db.close();
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:self_contained_gratitude/calendar_page/add_gratitude_dialog.dart';
 import 'package:self_contained_gratitude/calendar_page/edit_gratitude_dialog.dart';
 import 'package:self_contained_gratitude/models/journal_entry.dart';
@@ -15,7 +16,8 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
-  late Future<List<JournalEntry>> _journalEntries;
+   List<JournalEntry> _journalEntries = [];
+   bool isLoading = true;
 
   @override
   void initState() {
@@ -23,13 +25,15 @@ class _CalendarPageState extends State<CalendarPage> {
     _loadJournalEntries();
   }
 
-  void _loadJournalEntries() {
+  void _loadJournalEntries() async {
+    await DatabaseHelper.instance.waitForDbReady(); // Ensure DB is ready
+    _journalEntries = await DatabaseHelper.instance.readAllEntries();
     setState(() {
-      _journalEntries = DatabaseHelper.instance.readAllEntries();
+      isLoading = false;
     });
   }
 
-  Future<void> _addGratitudeItem(String bodyText) async {
+  void _addGratitudeItem(String bodyText) async {
     final newEntry = JournalEntry(
       dateCreated: DateTime.now().toIso8601String(),
       lastDateShown: DateTime.now().toIso8601String(),
@@ -39,7 +43,7 @@ class _CalendarPageState extends State<CalendarPage> {
     _loadJournalEntries();
   }
 
-  Future<void> _editGratitudeItem(JournalEntry entry, String updatedText) async {
+  void _editGratitudeItem(JournalEntry entry, String updatedText) async {
     final updatedEntry = JournalEntry(
       id: entry.id,
       dateCreated: entry.dateCreated,
@@ -50,7 +54,7 @@ class _CalendarPageState extends State<CalendarPage> {
     _loadJournalEntries();
   }
 
-  Future<void> _deleteGratitudeItem(int id) async {
+  void _deleteGratitudeItem(int id) async {
     await DatabaseHelper.instance.deleteEntry(id);
     _loadJournalEntries();
   }
@@ -107,17 +111,32 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  Future<void> _showTimePicker() async {
+  void _showTimePicker() async {
+    // Check if notification permission is granted
+    final notifStatus = await Permission.notification.status;
+    final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+
+    // If either is denied or permanently denied, show a dialog or SnackBar
+    if (!notifStatus.isGranted || !exactAlarmStatus.isGranted) {
+      // Show a message or a dialog directing user to enable permissions
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enable notification and exact alarm permissions to schedule notifications.'),
+        ),
+      );
+      return;
+    }
+
+    final currentScheduledTime = await NotificationHelper.instance.getNotificationTime();
+    // Otherwise, permission is granted; proceed to show time picker and schedule
     final selectedTime = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: currentScheduledTime,
     );
 
     if (selectedTime != null) {
-      // Store the selected time
+      // Store and schedule the notification
       await NotificationHelper.instance.storeNotificationTime(selectedTime);
-
-      // Schedule the notification with the new time
       await NotificationHelper.instance.scheduleDailyNotification();
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -153,8 +172,10 @@ class _CalendarPageState extends State<CalendarPage> {
           ),
         ]
       ),
-      body: Container(
+      body: isLoading ? CircularProgressIndicator() : Container(
         // Adding a nice gradient background
+        width: double.infinity,
+        height: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [Colors.lightBlueAccent, Colors.white],
@@ -162,22 +183,12 @@ class _CalendarPageState extends State<CalendarPage> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: FutureBuilder<List<JournalEntry>>(
-          future: _journalEntries,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text('No gratitude items yet.'));
-            } else {
-              final entries = snapshot.data!;
-              return ListView.builder(
+        child: _journalEntries.isEmpty ? const Center(child: Text('No gratitude items yet.')) :
+            ListView.builder(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-                itemCount: entries.length,
+                itemCount: _journalEntries.length,
                 itemBuilder: (context, index) {
-                  final entry = entries[index];
+                  final entry = _journalEntries[index];
                   final formattedDate = DateFormat.yMMMMd().format(
                     DateTime.parse(entry.dateCreated),
                   );
@@ -226,10 +237,7 @@ class _CalendarPageState extends State<CalendarPage> {
                     ),
                   );
                 },
-              );
-            }
-          },
-        ),
+              )
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddGratitudeDialog,
