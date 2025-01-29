@@ -22,6 +22,8 @@ class NotificationHelper {
   // 3. A public static getter to access this same instance.
   static NotificationHelper get instance => _singleton;
 
+  bool hasPermissions = false;
+
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
   FlutterLocalNotificationsPlugin();
 
@@ -32,16 +34,7 @@ class NotificationHelper {
 
     final notificationsGranted = await requestNotificationPermissions();
     if(!notificationsGranted){
-      //Do not setup notifications if permission is denied
       return;
-    }
-
-    if(Platform.isAndroid){
-      final alarmPermissions = await Permission.scheduleExactAlarm.request();
-
-      if(!alarmPermissions.isGranted){
-        return;
-      }
     }
 
     const AndroidInitializationSettings androidSettings =
@@ -74,7 +67,8 @@ class NotificationHelper {
   Future<bool> requestNotificationPermissions() async {
     if (Platform.isAndroid) {
       var permissionsStatus = await Permission.notification.request();
-      if(permissionsStatus.isGranted){
+      final alarmPermissions = await Permission.scheduleExactAlarm.request();
+      if(permissionsStatus.isGranted && alarmPermissions.isGranted){
         return true;
       }
     }
