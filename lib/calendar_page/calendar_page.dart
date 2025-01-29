@@ -115,14 +115,20 @@ class _CalendarPageState extends State<CalendarPage> {
 
   void _showTimePicker() async {
     var alarmPermissions = true;
-    var notifStatus = true;
+    var notificationStatus = true;
 
-    notifStatus = await Permission.notification.status.isGranted;
+    // Correct way to check notification permission
+    final notificationPermissions = await Permission.notification.status;
+    notificationStatus = notificationPermissions.isGranted;
+
     if (Platform.isAndroid) {
-      alarmPermissions = await Permission.scheduleExactAlarm.status.isGranted;
+      // Correct way to check Android's exact alarm permission
+      final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+      alarmPermissions = exactAlarmStatus.isGranted;
     }
 
-    if (!alarmPermissions || !notifStatus) {
+
+    if (!alarmPermissions || !notificationStatus) {
       // Show a message or a dialog directing user to enable permissions
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
