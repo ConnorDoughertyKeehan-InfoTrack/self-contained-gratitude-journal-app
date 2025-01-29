@@ -114,25 +114,13 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   void _showTimePicker() async {
-    var alarmPermissions = true;
-    var notificationStatus = true;
+    var hasNotificationPermissions = await NotificationHelper.instance.requestNotificationPermissions();
 
-    // Correct way to check notification permission
-    final notificationPermissions = await Permission.notification.status;
-    notificationStatus = notificationPermissions.isGranted;
-
-    if (Platform.isAndroid) {
-      // Correct way to check Android's exact alarm permission
-      final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
-      alarmPermissions = exactAlarmStatus.isGranted;
-    }
-
-
-    if (!alarmPermissions || !notificationStatus) {
+    if (!hasNotificationPermissions) {
       // Show a message or a dialog directing user to enable permissions
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enable exact alarms to schedule notifications.'),
+          content: Text('Please enable notifications to allow setting notification time'),
         ),
       );
       return;
