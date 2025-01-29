@@ -36,10 +36,12 @@ class NotificationHelper {
       return;
     }
 
-    final alarmPermissions = await Permission.scheduleExactAlarm.request();
+    if(Platform.isAndroid){
+      final alarmPermissions = await Permission.scheduleExactAlarm.request();
 
-    if(!alarmPermissions.isGranted){
-      return;
+      if(!alarmPermissions.isGranted){
+        return;
+      }
     }
 
     const AndroidInitializationSettings androidSettings =

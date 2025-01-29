@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -114,17 +116,30 @@ class _CalendarPageState extends State<CalendarPage> {
   void _showTimePicker() async {
     // Check if notification permission is granted
     final notifStatus = await Permission.notification.status;
-    final exactAlarmStatus = await Permission.scheduleExactAlarm.status;
+
 
     // If either is denied or permanently denied, show a dialog or SnackBar
-    if (!notifStatus.isGranted || !exactAlarmStatus.isGranted) {
+    if (!notifStatus.isGranted) {
       // Show a message or a dialog directing user to enable permissions
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Please enable notification and exact alarm permissions to schedule notifications.'),
+          content: Text('Please enable notification permissions to schedule notifications.'),
         ),
       );
       return;
+    }
+
+    if (Platform.isAndroid) {
+      final alarmPermissions = await Permission.scheduleExactAlarm.status;
+      if (!alarmPermissions.isGranted) {
+        // Show a message or a dialog directing user to enable permissions
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please enable exact alarms to schedule notifications.'),
+          ),
+        );
+        return;
+      }
     }
 
     final currentScheduledTime = await NotificationHelper.instance.getNotificationTime();
