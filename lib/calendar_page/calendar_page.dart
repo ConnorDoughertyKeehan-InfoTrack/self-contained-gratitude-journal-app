@@ -131,6 +131,7 @@ class _CalendarPageState extends State<CalendarPage> {
     final selectedTime = await showTimePicker(
       context: context,
       initialTime: currentScheduledTime,
+      helpText: "Set reminder time"
     );
 
     if (selectedTime != null) {
