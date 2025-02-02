@@ -5,10 +5,13 @@ import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:self_contained_gratitude/calendar_page/add_gratitude_dialog.dart';
 import 'package:self_contained_gratitude/calendar_page/edit_gratitude_dialog.dart';
+import 'package:self_contained_gratitude/calendar_page/import_export_dialog.dart';
 import 'package:self_contained_gratitude/models/journal_entry.dart';
 import 'package:self_contained_gratitude/utils/database_helper.dart';
 import 'package:self_contained_gratitude/utils/journal_database_helper.dart';
 import 'package:self_contained_gratitude/utils/notification_helper.dart';
+
+import '../utils/csv_helper.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -148,6 +151,22 @@ class _CalendarPageState extends State<CalendarPage> {
     }
   }
 
+  void importComplete() {
+    setState(() {
+
+    });
+  }
+
+   void _showImportExportDialog() {
+     showDialog(
+       context: context,
+       builder: (_) => ImportExportDialog(
+         journalEntries: _journalEntries,
+         importComplete: importComplete,
+       ),
+     );
+   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -155,6 +174,11 @@ class _CalendarPageState extends State<CalendarPage> {
       appBar: AppBar(
         title: const Text('Gratitude Journal'),
         centerTitle: true,
+        leading: IconButton(
+          icon: const Icon(Icons.file_copy_outlined),
+          tooltip: 'Import/Export',
+          onPressed: _showImportExportDialog,
+        ),
         actions: [
           IconButton(
             icon: Container(
