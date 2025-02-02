@@ -7,7 +7,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await DatabaseHelper.instance.waitForDbReady();
-  await NotificationHelper.instance.initialize();
+
+  //Fire and forget this
+  NotificationHelper.instance.initialize();
 
   runApp(MyApp());
 }

@@ -66,11 +66,16 @@ class NotificationHelper {
 
   Future<bool> requestNotificationPermissions() async {
     if (Platform.isAndroid) {
-      var permissionsStatus = await Permission.notification.request();
-      final alarmPermissions = await Permission.scheduleExactAlarm.request();
-      if(permissionsStatus.isGranted && alarmPermissions.isGranted){
-        return true;
+      if (await Permission.notification.isDenied) {
+        await Permission.notification.request();
       }
+
+      if (await Permission.scheduleExactAlarm.isDenied) {
+        await Permission.scheduleExactAlarm.request();
+      }
+
+      return await Permission.notification.isGranted &&
+          await Permission.scheduleExactAlarm.isGranted;
     }
     else if (Platform.isIOS) {
       final bool granted = await flutterLocalNotificationsPlugin
