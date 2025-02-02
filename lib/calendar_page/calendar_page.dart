@@ -182,10 +182,6 @@ class _CalendarPageState extends State<CalendarPage> {
         actions: [
           IconButton(
             icon: Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-              ),
               padding: const EdgeInsets.all(6),
               child: const Icon(
                 Icons.access_time,

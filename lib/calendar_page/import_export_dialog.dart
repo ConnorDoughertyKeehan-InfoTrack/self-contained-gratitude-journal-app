@@ -13,14 +13,13 @@ class ImportExportDialog extends StatefulWidget {
 }
 
 class _ImportExportDialogState extends State<ImportExportDialog> {
-  // In your DatabaseHelper extension or wherever you handle CSV import
+  // Export CSV (unchanged)
   Future<void> _exportCsv() async {
     await exportEntriesToCsv(widget.journalEntries);
   }
 
+  // Import CSV (unchanged)
   Future<void> _importCsv() async {
-    // 1. Let user pick a file
-    print("we hitting this");
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: false,
       type: FileType.custom,
@@ -37,7 +36,6 @@ class _ImportExportDialogState extends State<ImportExportDialog> {
     // 4. Pass the path to your import method
     await importEntriesFromCsv(pickedFilePath);
 
-    // 5. Refresh your local UI data (assuming you have a method like _loadJournalEntries)
     widget.importComplete();
   }
 
@@ -45,28 +43,164 @@ class _ImportExportDialogState extends State<ImportExportDialog> {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(28),
       ),
-      elevation: 10,
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: 300,
+      elevation: 20,
+      backgroundColor: Colors.transparent,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.purple.shade50, Colors.blue.shade50],
+          ),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.deepPurple.withOpacity(0.1),
+              blurRadius: 20,
+              spreadRadius: 5,
+            )
+          ],
+        ),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.file_copy_outlined, color: Theme.of(context).primaryColor, size: 40),
-              ElevatedButton(
-                onPressed: _importCsv,
-                child: Text("Import"),
+              // Header Section
+              Stack(
+                children: [
+                  Align(
+                    alignment: Alignment.topRight,
+                    child: IconButton(
+                      icon: Icon(Icons.close, color: Colors.grey.shade500),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                  Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.deepPurple.withOpacity(0.1),
+                              blurRadius: 12,
+                              spreadRadius: 4,
+                            )
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.cloud_sync_rounded,
+                          color: Colors.deepPurple[400],
+                          size: 40,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Manage Your Memories",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.deepPurple[800],
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Safeguard your gratitude journey\nwith seamless import/export",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade700,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              ElevatedButton(
-                onPressed: _exportCsv,
-                child: Text("Export"),
-              )
+
+              const SizedBox(height: 24),
+
+              // Action Buttons
+              Column(
+                children: [
+                  _buildActionButton(
+                    context,
+                    icon: Icons.download_rounded,
+                    label: "Import Entries",
+                    onPressed: _importCsv,
+                    isPrimary: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildActionButton(
+                    context,
+                    icon: Icons.upload_rounded,
+                    label: "Export Entries",
+                    onPressed: _exportCsv,
+                    isPrimary: false,
+                  ),
+                ],
+              ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton(BuildContext context, {required IconData icon, required String label, required Function() onPressed, required bool isPrimary}) {
+    final colors = isPrimary
+        ? [Colors.deepPurple, Colors.indigo]
+        : [Colors.white, Colors.white];
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: isPrimary
+            ? [
+          BoxShadow(
+            color: Colors.deepPurple.withOpacity(0.2),
+            blurRadius: 8,
+            spreadRadius: 2,
+          )
+        ]
+            : null,
+      ),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          foregroundColor: isPrimary ? Colors.white : Colors.deepPurple,
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 22),
+            const SizedBox(width: 12),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
         ),
       ),
     );
